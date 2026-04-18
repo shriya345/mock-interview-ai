@@ -1,0 +1,28 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: system-ui, sans-serif; max-width: 720px; margin: 0 auto; padding: 2rem; background: #f8f9fa; color: #1a1a2e; }
+h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+h2 { font-size: 1.5rem; margin-bottom: 1rem; }
+p { color: #555; margin-bottom: 1rem; }
+.form-card { background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; flex-direction: column; gap: 1rem; }
+input, select, textarea { padding: 0.75rem 1rem; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; width: 100%; }
+textarea { min-height: 120px; resize: vertical; }
+button { padding: 0.75rem 1.5rem; background: #4f46e5; color: white; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; }
+button:hover { background: #4338ca; }
+button:disabled { background: #aaa; cursor: not-allowed; }
+.header { display: flex; justify-content: space-between; margin-bottom: 1rem; }
+#role-badge { background: #e0e7ff; color: #4f46e5; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; }
+.question-box { background: white; border-left: 4px solid #4f46e5; border-radius: 8px; padding: 1.5rem; margin-bottom: 1rem; font-size: 1.1rem; line-height: 1.6; }
+#feedback-box { background: white; border-radius: 12px; padding: 1.5rem; margin-top: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+#feedback-text { line-height: 1.8; white-space: pre-wrap; color: #333; }
+#score-display { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem; align-items: flex-start; }
+.score-card { background: #f0f4ff; border-radius: 8px; padding: 0.75rem 1.25rem; text-align: center; }
+.score-card span { display: block; font-size: 0.8rem; color: #666; }
+.score-card strong { font-size: 1.4rem; color: #4f46e5; }
+#suggestion-text { font-style: italic; color: #555; padding: 0.75rem; background: #fffbeb; border-radius: 8px; flex: 1; }
+.report-card { background: white; border-radius: 12px; padding: 2rem; margin-bottom: 1rem; }
+.final-scores { display: flex; gap: 1rem; margin: 1rem 0; }
+.verdict { padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600; text-align: center; margin: 1rem 0; }
+.verdict-strong { background: #d1fae5; color: #065f46; }
+.verdict-acceptable { background: #fef3c7; color: #92400e; }
+.verdict-needs-work { background: #fee2e2; color: #991b1b; }
+#next-btn { margin-top: 1rem; width: 100%; }
