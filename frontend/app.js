@@ -76,10 +76,16 @@ function handleMessage(msg) {
     if (msg.type === 'next_question') {
         nextQuestionData = msg;
     }
-
-    if (msg.type === 'interview_complete') {
-        showReport(msg.report);
-    }
+     if (msg.type === 'interview_complete') {
+    // Store report but don't switch screen yet
+    window._pendingReport = msg.report;
+    // Show a "View Report" button instead of immediately switching
+    const nextBtn = document.getElementById('next-btn');
+    nextBtn.textContent = 'View Final Report →';
+    nextBtn.style.display = 'block';
+    nextBtn.onclick = () => showReport(window._pendingReport);
+}
+    
 }
 
 function submitAnswer() {
