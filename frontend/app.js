@@ -1,6 +1,8 @@
 let ws = null;
 let sessionId = null;
 let nextQuestionData = null;
+let pendingReport = null;
+let currentQuestionNumber = 1;
 
 async function startInterview() {
     const name = document.getElementById('name-input').value.trim();
@@ -17,50 +19,39 @@ async function startInterview() {
 
     const data = await response.json();
     sessionId = data.session_id;
+    currentQuestionNumber = 1;
 
-    // Show interview screen
     document.getElementById('setup-screen').style.display = 'none';
     document.getElementById('interview-screen').style.display = 'block';
     document.getElementById('question-text').textContent = data.question;
     document.getElementById('role-badge').textContent = role;
     document.getElementById('progress-text').textContent = `Question 1 of ${data.total_questions}`;
 
-    // Connect WebSocket
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsHost = window.location.host;
     ws = new WebSocket(`${wsProtocol}//${wsHost}/ws/${sessionId}`);
 
-ws.onopen = () => {
-    console.log('WebSocket connected successfully');
-};
-
-ws.onerror = (error) => {
-    console.error('WebSocket error:', error);
-    alert('Connection error — please refresh and try again');
-};
-
-ws.onclose = (event) => {
-    console.log('WebSocket closed:', event.code, event.reason);
-};
-
-ws.onmessage = (event) => {
+    ws.onopen = () => console.log('WebSocket connected');
+    ws.onerror = (e) => console.error('WebSocket error:', e);
+    ws.onclose = (e) => console.log('WebSocket closed:', e.code, e.reason);
+    ws.onmessage = (event) => {
         const msg = JSON.parse(event.data);
         handleMessage(msg);
     };
 }
 
 function handleMessage(msg) {
+
     if (msg.type === 'evaluation_start') {
         document.getElementById('feedback-box').style.display = 'block';
-        document.getElementById('feedback-text').textContent = '';
+        document.getElementById('feedback-text').textContent = 'Analyzing your answer...';
         document.getElementById('score-display').style.display = 'none';
         document.getElementById('next-btn').style.display = 'none';
         document.getElementById('submit-btn').disabled = true;
     }
 
     if (msg.type === 'feedback_token') {
-        // Append token — creates the streaming "typing" effect
-        document.getElementById('feedback-text').textContent += msg.content;
+        document.getElementById('feedback-text').textContent = msg.content;
     }
 
     if (msg.type === 'score') {
@@ -69,23 +60,34 @@ function handleMessage(msg) {
         document.getElementById('tech-score').textContent = `${score.technical}/10`;
         document.getElementById('comm-score').textContent = `${score.communication}/10`;
         document.getElementById('suggestion-text').textContent = `Tip: ${score.suggestion}`;
-        document.getElementById('next-btn').style.display = 'block';
         document.getElementById('submit-btn').disabled = false;
+
+        const nextBtn = document.getElementById('next-btn');
+        nextBtn.style.display = 'block';
+
+        // If report is waiting (Q3 already done), show View Report
+        if (pendingReport) {
+            nextBtn.textContent = 'View Final Report →';
+            nextBtn.onclick = () => showReport(pendingReport);
+        } else if (currentQuestionNumber < 3) {
+            // More questions coming
+            nextBtn.textContent = 'Next Question →';
+            nextBtn.onclick = nextQuestion;
+        }
+        // If Q3 and no report yet, wait for interview_complete message
     }
 
     if (msg.type === 'next_question') {
         nextQuestionData = msg;
     }
-     if (msg.type === 'interview_complete') {
-    // Store report but don't switch screen yet
-    window._pendingReport = msg.report;
-    // Show a "View Report" button instead of immediately switching
-    const nextBtn = document.getElementById('next-btn');
-    nextBtn.textContent = 'View Final Report →';
-    nextBtn.style.display = 'block';
-    nextBtn.onclick = () => showReport(window._pendingReport);
-}
-    
+
+    if (msg.type === 'interview_complete') {
+        pendingReport = msg.report;
+        const nextBtn = document.getElementById('next-btn');
+        nextBtn.textContent = 'View Final Report →';
+        nextBtn.style.display = 'block';
+        nextBtn.onclick = () => showReport(pendingReport);
+    }
 }
 
 function submitAnswer() {
@@ -96,11 +98,14 @@ function submitAnswer() {
 
 function nextQuestion() {
     if (!nextQuestionData) return;
+    currentQuestionNumber++;
     document.getElementById('question-text').textContent = nextQuestionData.question;
     document.getElementById('progress-text').textContent = `Question ${nextQuestionData.number} of 3`;
     document.getElementById('answer-input').value = '';
     document.getElementById('feedback-box').style.display = 'none';
+    document.getElementById('next-btn').style.display = 'none';
     nextQuestionData = null;
+    pendingReport = null;
 }
 
 function showReport(report) {
@@ -119,7 +124,7 @@ function showReport(report) {
                     <strong>${report.avg_communication}/10</strong>
                 </div>
             </div>
-            <div class="verdict verdict-${report.overall_verdict.toLowerCase().replace(' ','-')}">
+            <div class="verdict verdict-${report.overall_verdict.toLowerCase().replace(' ', '-')}">
                 Overall: ${report.overall_verdict}
             </div>
         </div>
