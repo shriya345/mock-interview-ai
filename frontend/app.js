@@ -26,7 +26,9 @@ async function startInterview() {
     document.getElementById('progress-text').textContent = `Question 1 of ${data.total_questions}`;
 
     // Connect WebSocket
-    ws = new WebSocket(`ws://localhost:8000/ws/${sessionId}`);
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+const wsHost = window.location.host;
+ws = new WebSocket(`${wsProtocol}//${wsHost}/ws/${sessionId}`);
 
     ws.onmessage = (event) => {
         const msg = JSON.parse(event.data);
