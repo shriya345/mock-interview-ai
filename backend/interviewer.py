@@ -3,11 +3,13 @@ import os
 from groq import Groq
 from dotenv import load_dotenv
 
-load_dotenv()   # Load .env BEFORE reading the key
+load_dotenv()
+
 
 def get_groq_client():
-    """Create Groq client lazily so .env is always loaded first."""
     return Groq(api_key=os.getenv("GROQ_API_KEY"))
+
+
 QUESTION_BANK = {
     "SDE": {
         "beginner": [
@@ -64,16 +66,13 @@ QUESTION_BANK = {
 
 
 def get_question(role: str, difficulty: str, question_index: int) -> str:
-    client = get_groq_client() 
-    """Get a question for the given role and difficulty."""
     questions = QUESTION_BANK.get(role, {}).get(difficulty, [])
-    
     if question_index < len(questions):
         return questions[question_index]
     else:
-        # Generate a dynamic question if we've run out of preset ones
+        client = get_groq_client()
         response = client.chat.completions.create(
-            model="llama-3.1-70b-versatile",
+            model="llama-3.3-70b-versatile",
             messages=[{
                 "role": "user",
                 "content": f"Generate ONE {difficulty} level interview question for a {role} position. Return only the question, nothing else."
@@ -85,12 +84,7 @@ def get_question(role: str, difficulty: str, question_index: int) -> str:
 
 async def evaluate_answer_stream(question: str, answer: str, role: str, websocket):
     client = get_groq_client()
-    """
-    Evaluate the candidate's answer using streaming LLM.
-    Sends feedback token-by-token to the websocket.
-    Also returns a structured score at the end.
-    """
-    
+
     evaluation_prompt = f"""You are an experienced technical interviewer for a {role} position.
 
 Question asked: {question}
@@ -99,7 +93,7 @@ Candidate's answer: {answer}
 Provide a helpful, encouraging interview evaluation. Structure it as:
 
 **What you got right:** [1-2 sentences]
-**What could be stronger:** [1-2 sentences]  
+**What could be stronger:** [1-2 sentences]
 **Sample strong answer would include:** [2-3 key points]
 
 Be specific, practical, and encouraging. Then on the LAST LINE write exactly this JSON and nothing after it:
@@ -107,32 +101,28 @@ SCORE:{{"technical": X, "communication": Y, "suggestion": "one sentence tip", "v
 
 Where X and Y are scores from 1-10."""
 
-    # Stream the text feedback
     response = client.chat.completions.create(
-    model="llama-3.3-70b-versatile",
-    messages=[{"role": "user", "content": evaluation_prompt}],
-    max_tokens=600,
-    stream=False  # ← changed to False
-)
+        model="llama-3.3-70b-versatile",
+        messages=[{"role": "user", "content": evaluation_prompt}],
+        max_tokens=600,
+        stream=False
+    )
 
-full_response = response.choices[0].message.content
+    full_response = response.choices[0].message.content
+    feedback_text = full_response.split("SCORE:")[0].strip()
 
-# Send the full feedback in one go (no streaming)
-feedback_text = full_response.split("SCORE:")[0].strip()
+    await websocket.send_json({
+        "type": "feedback_token",
+        "content": feedback_text
+    })
 
-await websocket.send_json({
-    "type": "feedback_token",
-    "content": feedback_text
-})
-    
-    # Extract the score from the last line
     score = {"technical": 7, "communication": 7, "suggestion": "Keep practicing!", "verdict": "Acceptable"}
-    
+
     if "SCORE:" in full_response:
         try:
             score_line = full_response.split("SCORE:")[-1].strip()
             score = json.loads(score_line)
-        except:
-            pass   # Use default score if parsing fails
-    
+        except Exception:
+            pass
+
     return score
