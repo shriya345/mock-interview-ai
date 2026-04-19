@@ -108,28 +108,22 @@ SCORE:{{"technical": X, "communication": Y, "suggestion": "one sentence tip", "v
 Where X and Y are scores from 1-10."""
 
     # Stream the text feedback
-    stream = client.chat.completions.create(
-        model="llama-3.1-70b-versatile",
-        messages=[{"role": "user", "content": evaluation_prompt}],
-        max_tokens=600,
-        stream=True    # This is the key — enables streaming
-    )
-    
-    full_response = ""
-    
-    # Send each chunk to the websocket as it arrives
-    for chunk in stream:
-        if chunk.choices[0].delta.content:
-            token = chunk.choices[0].delta.content
-            
-            # Don't stream the SCORE JSON line — handle it separately
-            if "SCORE:" not in full_response and "SCORE:" not in token:
-                await websocket.send_json({
-                    "type": "feedback_token",
-                    "content": token
-                })
-            
-            full_response += token
+    response = client.chat.completions.create(
+    model="llama-3.3-70b-versatile",
+    messages=[{"role": "user", "content": evaluation_prompt}],
+    max_tokens=600,
+    stream=False  # ← changed to False
+)
+
+full_response = response.choices[0].message.content
+
+# Send the full feedback in one go (no streaming)
+feedback_text = full_response.split("SCORE:")[0].strip()
+
+await websocket.send_json({
+    "type": "feedback_token",
+    "content": feedback_text
+})
     
     # Extract the score from the last line
     score = {"technical": 7, "communication": 7, "suggestion": "Keep practicing!", "verdict": "Acceptable"}
