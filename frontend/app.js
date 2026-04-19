@@ -27,10 +27,23 @@ async function startInterview() {
 
     // Connect WebSocket
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-const wsHost = window.location.host;
-ws = new WebSocket(`${wsProtocol}//${wsHost}/ws/${sessionId}`);
+    const wsHost = window.location.host;
+    ws = new WebSocket(`${wsProtocol}//${wsHost}/ws/${sessionId}`);
 
-    ws.onmessage = (event) => {
+ws.onopen = () => {
+    console.log('WebSocket connected successfully');
+};
+
+ws.onerror = (error) => {
+    console.error('WebSocket error:', error);
+    alert('Connection error — please refresh and try again');
+};
+
+ws.onclose = (event) => {
+    console.log('WebSocket closed:', event.code, event.reason);
+};
+
+ws.onmessage = (event) => {
         const msg = JSON.parse(event.data);
         handleMessage(msg);
     };
