@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from dotenv import load_dotenv
 import json
+import asyncio
 
 from backend.models import StartSessionRequest
 from backend.session import create_session, get_session, add_qa_to_session
@@ -105,6 +106,7 @@ async def websocket_interview(websocket: WebSocket, session_id: str):
             # Check if interview is complete (3 questions)
             if question_index >= 2:
                 # Generate final report
+                await asyncio.sleep(2)
                 updated_session = get_session(session_id)
                 scores = updated_session.get("scores", [])
                 
